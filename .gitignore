@@ -1,0 +1,51 @@
+# 依赖
+node_modules/
+
+# 构建输出
+frontend/dist/
+
+# 生成的图片
+backend/outputs/
+
+# Python
+__pycache__/
+*.pyc
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 临时文件
+*.log
+*.tmp
+
+# Python 虚拟环境
+.venv/
+venv/
+
+# 运行时 / 生成 / 日志 / 临时
+.runtime/
+gen_output/
+logs/
+tmp/
+*.err
+backend/.config-stats.json
+backend/generation_recovery.json
+folder_items.json
+folder_list.json
+
+# 密钥 / 本地配置（绝不上传）
+image_api_keys.local.json
+*.local.json
+backend/system_config.json
+
+# 备份文件
+*.bak
+*.bak-*
+*.orig
+
+# IDE
+.windsurf/
+
+# 误建文件
+NUL)

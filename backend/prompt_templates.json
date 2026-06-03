@@ -1,0 +1,92 @@
+{
+  "groups": [
+    {
+      "id": "default",
+      "name": "通用",
+      "color": "#4CAF50",
+      "order": 0
+    },
+    {
+      "id": "product",
+      "name": "产品",
+      "color": "#2196F3",
+      "order": 2
+    },
+    {
+      "id": "portrait",
+      "name": "人像",
+      "color": "#E91E63",
+      "order": 3
+    },
+    {
+      "name": "室内出图",
+      "color": "#4CAF50",
+      "id": "grp_1775899737529",
+      "order": 4
+    },
+    {
+      "name": "出图金样板",
+      "color": "#D6A84F",
+      "id": "grp_output_gold_samples",
+      "order": 5
+    }
+  ],
+  "templates": [
+    {
+      "name": "去文字",
+      "prompt": "去掉图片中的文字，保留原图",
+      "groupId": "default",
+      "icon": "📝",
+      "id": "tpl_1776950503790",
+      "createdAt": "2026-04-23T21:21:43.000Z"
+    },
+    {
+      "name": "去人物",
+      "prompt": "去掉图片中的人物，保留原图",
+      "groupId": "default",
+      "icon": "📝",
+      "id": "tpl_1776950629063",
+      "createdAt": "2026-04-23T21:23:49.000Z"
+    },
+    {
+      "createdAt": "2026-04-24T10:34:19.000Z",
+      "description": "来自 SU Prompt Toolkit · 产品提取",
+      "groupId": "product",
+      "id": "tpl_1776998059046",
+      "name": "产品提取 - 电商主图（JSON）",
+      "prompt": "{\n  \"项目名称\": \"产品提取 - 电商主图\",\n  \"核心约束\": {\n    \"主体不变\": \"严格保持产品的形态、结构、比例、颜色与原始截图完全一致。严禁添加或删改任何部件。\",\n    \"细节真实\": \"真实还原产品表面纹理、材质光泽、缝线、金属件等所有可见细节。\",\n    \"商用级别\": \"输出为可用于电商主图、产品目录、品牌手册的商用级摄影作品。\"\n  },\n  \"视角与构图\": \"视角：正面正视、侧面45°透视、细节特写。\",\n  \"背景与光照\": \"背景类型：纯白底。 背景氛围：带微妙阴影。 光照：柔光箱正面光、棚拍均匀打光。 阴影：柔和地面投影。\",\n  \"出图规格\": {\n    \"用途\": \"电商主图，SKU 详情图\",\n    \"宽高比\": \"3:4 竖版\",\n    \"画质\": \"8K 超清，商业摄影级，色彩准确还原，可商用\"\n  }\n}"
+    },
+    {
+      "id": "tpl_soft_quote_exploded_gold_20260503",
+      "createdAt": "2026-05-03T18:30:00.000Z",
+      "name": "软装报价爆炸图（金样板）",
+      "prompt": "根据参考图生成一张住宅空间软装方案报价构成分析图，采用 3D 立体轴测视角的爆炸图形式呈现。整体以纯白色背景排版，画面清晰、专业、整洁，像室内设计软装方案汇报板，而不是真实室内照片。\n\n请先自动识别参考图中的空间风格、家具品类、软装摆件、主要材质、配色关系与空间氛围，再将这些信息转化为清晰的报价构成分析图。画面左侧呈现 3D 轴测爆炸空间结构，将原图中的主要家具、软装、灯具、窗帘、地毯、挂画、绿植、花器、托盘、抱枕和装饰小件拆解悬浮展示。每件物品使用编号引线标注，并附有清晰中英文名称。\n\n画面右侧生成“软装清单与报价构成 / Soft Furnishing Quotation List”表格，表格列包含：编号 No.、类别 Category、数量 Qty.、推荐材质 Recommended Material、参考色系 Reference Colorway、预算档位 Budget Tier、造型角色 Styling Role、空间功能 Spatial Function。不要出现真实品牌和真实金额，不要编造具体报价，只用预算档位表达，例如 Basic、Premium、High-spec、Custom。\n\n画面底部设置 MATERIAL REFERENCE 材质参考条和 COLOR PALETTE 色彩搭配区，陈列从原图提取的材质纹理缩略图和实体色卡，包括墙面肌理、木饰面、金属、布艺、窗帘、地毯、陶器、石材、玻璃、绿植叶片等。整体需保持原图的设计调性，信息层级清楚，留白充足，细线标注，专业汇报板风格。高清细节，clean white background, professional interior design quotation analysis board, 3D axonometric exploded view, furniture and soft furnishing breakdown, bilingual labels, material reference, color palette, neat infographic layout, high resolution.",
+      "groupId": "grp_output_gold_samples",
+      "icon": "📊",
+      "description": "金样板：Foshan-Poly-Cloud-Villa 东方度假图实测效果好",
+      "templateType": "quotation_exploded",
+      "templateStatus": "gold",
+      "workflow": "视觉分析 JSON -> 填入报价爆炸图骨架 -> 易狗/Eagle 生图 -> 记录测试效果",
+      "analysisSchema": "{\n  \"space_type\": \"空间类型\",\n  \"style_keywords\": [\"风格\", \"氛围\"],\n  \"palette\": [\"主色\", \"辅色\", \"点缀色\"],\n  \"furniture\": [\"家具品类\", \"数量\", \"造型角色\"],\n  \"soft_furnishing\": [\"窗帘\", \"地毯\", \"抱枕\", \"挂画\", \"摆件\"],\n  \"materials\": [\"墙面\", \"木作\", \"金属\", \"布艺\", \"石材\", \"绿植\"],\n  \"layout_target\": \"左侧3D轴测爆炸图 + 右侧报价构成表 + 底部材质与色卡\"\n}",
+      "compileNotes": "把视觉分析结果填入类别、数量、材质、参考色系、预算档位、造型角色、空间功能；不写真实金额，用预算档位和构成关系替代。",
+      "testNotes": "2026-05-03 卡卡确认：视觉效果、排版、信息完整度都好。左爆炸图、右表格、底部材质色卡是稳定骨架。",
+      "sampleImage": "L:/TUKU upload/upload.library/images/MOPM8VMH220BF.info/Foshan-Poly-Cloud-Villa-by-Purple-s-Design-Main-08.png"
+    },
+    {
+      "id": "tpl_soft_moodboard_gold_20260503",
+      "createdAt": "2026-05-03T18:31:00.000Z",
+      "name": "软装材料情绪板（金样板）",
+      "prompt": "根据参考图生成一张专业室内软装材料情绪板。画面采用高清俯视平铺实拍质感，所有元素均为真实物理样本，非数字拼贴。背景为干净中性浅米白色或浅灰白色，柔和自然光从侧面照射，突出木材、墙面肌理、布艺、金属、编织材质、陶器、石材和植物的真实纹理触感。\n\n请自动提取原空间的主色、辅色与点缀色，并制作实体色卡。整体色彩需还原参考图中的真实空间调性，包括墙面色、木作色、布艺色、金属色、地毯色、石材色、植物绿色等。\n\n情绪板中需要还原原图的真实材料小样，包括墙面材质样本、木饰面、木格栅或柜体小样、金属件、哑光黑色金属、棉麻布艺、窗帘布、天然编织地毯、陶罐肌理、石材或玻璃样本、纸质挂画样本、绿植叶片、干枝植物。\n\n同时提炼原图中的软装家具与摆件元素，生成简约几何小型实物样本，包括主家具轮廓、休闲椅、茶几或餐桌、灯具、挂画、花器、托盘、书籍、蜡烛、抱枕、陶器、绿植和装饰小件。整体排布需像专业室内设计师制作的实体软装材料板，样本错落有层次，色卡、材料样本、家具轮廓、灯具小样和装饰摆件分区清晰。构图平衡，留白高级，视觉逻辑干净，高清写实，真实摄影质感，8K，professional interior design moodboard, realistic flat lay, physical material samples, soft natural light.",
+      "groupId": "grp_output_gold_samples",
+      "icon": "🎨",
+      "description": "金样板：软装材质、色卡、实物样本情绪板",
+      "templateType": "moodboard",
+      "templateStatus": "gold",
+      "workflow": "视觉分析 JSON -> 填入材料情绪板骨架 -> 易狗/Eagle 生图 -> 回看材质是否贴近原图",
+      "analysisSchema": "{\n  \"space_type\": \"空间类型\",\n  \"style_keywords\": [\"风格\", \"氛围\"],\n  \"palette\": [\"主色\", \"辅色\", \"点缀色\"],\n  \"materials\": [\"墙面\", \"地面\", \"木作\", \"金属\", \"布艺\", \"石材\", \"玻璃\", \"植物\"],\n  \"furniture_shapes\": [\"家具轮廓\", \"灯具\", \"摆件\"],\n  \"layout_target\": \"俯视平铺实拍 + 实体色卡 + 真实材质小样 + 软装饰品\"\n}",
+      "compileNotes": "重点把参考图中可见的材质、色彩和软装元素写具体；强调真实物理样本、非数字拼贴、柔和自然光和分区清晰。",
+      "testNotes": "适合先批量生成空间软装情绪板；若材质不准，下一轮加入局部材质裁剪图作为参考。",
+      "sampleImage": "L:/TUKU upload/upload.library/images/MHJD8QBCT9YM5.info/Foshan-Poly-Cloud-Villa-by-Purple-s-Design-Main-08.jpg"
+    }
+  ]
+}
