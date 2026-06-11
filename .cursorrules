@@ -1,0 +1,35 @@
+# image-workflow-studio — Cursor 项目规则
+
+## 📕 最高优先级：先读 AGENTS.md
+
+进入本仓库的第一件事是阅读根目录的 `AGENTS.md`。它包含：
+
+- ⛔ 已锁定的代码段清单（动了等于 bug）
+- ✅ 已锁定的功能矩阵（卡卡 2026-05-12 确认稳定）
+- 🧪 改代码必跑的回归测试 (`pytest backend/tests/`)
+- 🔖 当前 baseline tag = `stable-20260512`
+- 📚 必查的中央记忆 ID 清单
+
+## 操作前的三步必做
+
+1. **查中央记忆**：`mcp2_recall query="<你要改的功能>"  projects=["image-workflow-studio","eagle"] sort_by=recent`
+2. **跑回归测试**：`cd backend && python -m pytest tests/ -v`，全绿才能改
+3. **改完再跑一次** + **让卡卡口头确认** 才能 commit
+
+## 严禁
+
+- ❌ 删 / 改测试文件（`backend/tests/`）— 每个测试对应已修过的 bug
+- ❌ 跨机直接 scp 覆盖（必须走 git，不许静默覆盖另一台）
+- ❌ 改完不 commit 就跑（卡卡无法回滚单个改动）
+- ❌ 改 `_generate_openai_images_edit` 参考图处理（已踩坑 2 次，memory `b032055a`）
+- ❌ 改 `system_config.json` load/save（已加 BOM + 三道防线，memory `d4feedaa`）
+- ❌ 移除 `mode` 字段校验（图生图无图必须 400）
+
+## 卡卡的背景
+
+- 业务用户，**一行代码都不懂**
+- 每天用此工具出商品图（电商 / 装修 / 产品）
+- 多个 AI 轮流改这个项目，已经多次"昨天好今天又坏"
+- 这份 AGENTS.md 是机制层面的护栏，不是建议
+
+详细见 [`AGENTS.md`](./AGENTS.md)。

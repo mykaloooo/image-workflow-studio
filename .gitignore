@@ -1,0 +1,78 @@
+# =============================================================================
+# image-workflow-studio  .gitignore
+# Rewritten 2026-05-12 (previous file had GBK->UTF8 encoding corruption that
+# silently broke ignore rules — see .gitignore.bak-before-rewrite-20260512).
+# =============================================================================
+
+# --- Dependencies / build artifacts -----------------------------------------
+node_modules/
+backend/.venv/
+backend/venv/
+frontend/dist/
+frontend/.vite/
+__pycache__/
+*.pyc
+*.pyo
+
+# --- Generated images / runtime state (machine-local) -----------------------
+backend/outputs/
+backend/generation_recovery.json
+backend/generation_history.jsonl
+backend/runtime_logs/
+backend/_server.log
+backend/_server.err.log
+backend/app.runtime.log
+backend/app.runtime.log.err
+backend/studio-restart.log
+backend/.config-stats.json
+
+# --- Sensitive config files (contain API keys, never commit) ----------------
+# Real config (with keys) — only example file (system_config.example.json) is committed
+backend/system_config.json
+backend/system_config.local.json
+image_api_keys.local.json
+.env
+.env.local
+.env.*.local
+
+# --- All backup files (.bak / .bak-* / .bak.* / .backup / .pc1bak / .old / .orig) ---
+*.bak
+*.bak-*
+*.bak.*
+*.backup
+*.pc1bak-*
+*.pc2bak-*
+*.old
+*.orig
+backend/app.py.*bak*
+backend/app.py.*backup*
+
+# --- Syncthing markers ------------------------------------------------------
+.stfolder/
+.stignore
+.stversions/
+
+# --- Temporary scripts / scratch files --------------------------------------
+# Anything starting with _tmp_ is throwaway work-in-progress, never commit
+_tmp_*
+**/_tmp_*
+temp_*.py
+temp_*.txt
+temp_*.md
+*.tmp
+
+# --- OS / IDE noise ---------------------------------------------------------
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# --- Logs -------------------------------------------------------------------
+*.log
+!CHANGELOG.md
+
+# --- Central memory local snapshots (large, regenerable) --------------------
+backend/central-memory-snapshots/

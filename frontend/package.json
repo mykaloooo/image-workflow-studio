@@ -1,0 +1,56 @@
+{
+  "name": "image-workflow-studio",
+  "version": "1.0.0",
+  "description": "基于无限画布的图片生成工作流工具",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "electron:dev": "set NODE_ENV=development && electron ../electron/main.js",
+    "electron:build": "npm run build && electron-builder"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "fabric": "^7.1.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "reactflow": "^11.10.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "electron": "^28.1.0",
+    "electron-builder": "^24.13.3",
+    "vite": "^5.0.8"
+  },
+  "build": {
+    "appId": "com.imageflow.studio",
+    "productName": "图片工作流工作室",
+    "directories": {
+      "output": "K:\\AI-Workspace\\projects\\graphic\\image_workflow_studio\\build-output"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/main.js"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "public/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "extraResources": [
+      {
+        "from": "../backend",
+        "to": "backend",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ]
+  }
+}

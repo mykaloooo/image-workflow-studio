@@ -1,0 +1,7 @@
+{
+  "name": "image-workflow-studio-electron",
+  "version": "1.0.0",
+  "description": "Electron main process for Image Workflow Studio",
+  "main": "main.js",
+  "dependencies": {}
+}

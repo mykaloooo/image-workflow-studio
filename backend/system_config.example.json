@@ -1,0 +1,81 @@
+{
+  "_doc": "这是 system_config 模板，PC1/PC2 首次部署时复制为 system_config.json 后填实际 api_key。真正的 system_config.json 已被 .gitignore 排除，不入 git。",
+  "_doc_sync": "PC1 / PC2 配置同步建议见 README 或问 cascade '/gsd-do 帮我配 system_config 同步'",
+  "providers": [
+    {
+      "api_key": "<SUXI_KEY_HERE>",
+      "api_url": "https://new.suxi.ai/",
+      "hasKey": false,
+      "id": "default_image",
+      "model": "gemini-3.1-flash-image-preview",
+      "name": "suxi (默认 Gemini 文生图)",
+      "type": "image"
+    },
+    {
+      "api_key": "<CHAT_KEY_HERE>",
+      "api_url": "",
+      "hasKey": false,
+      "id": "default_chat",
+      "model": "gemini-3-flash",
+      "name": "默认对话配置",
+      "type": "chat"
+    },
+    {
+      "api_key": "<VIDEO_KEY_HERE>",
+      "api_url": "",
+      "hasKey": false,
+      "id": "default_video",
+      "model": "sora-2-all",
+      "name": "默认视频配置",
+      "type": "video"
+    },
+    {
+      "api_key": "<OREAPI_KEY_HERE>",
+      "api_url": "https://oreapi.com",
+      "hasKey": false,
+      "id": "provider_oreapi",
+      "model": "",
+      "name": "oreapi",
+      "type": "image"
+    },
+    {
+      "api_key": "<CHAT2API_PLUS_KEY_HERE>",
+      "api_url": "http://108.61.180.83:8016",
+      "hasKey": false,
+      "id": "chat2api_japan_plus",
+      "model": "gpt-image-2",
+      "name": "chat2api Plus · gpt-image-2 (120张/天)",
+      "type": "image"
+    },
+    {
+      "api_key": "<CPA_JAPAN_KEY_HERE>",
+      "api_url": "https://codex.kakahome.top:9443",
+      "hasKey": false,
+      "id": "cpa_japan",
+      "model": "gpt-image-2",
+      "name": "CPA Japan (gpt-image-2)",
+      "type": "image"
+    }
+  ],
+  "active_image_provider_id": "cpa_japan",
+  "active_chat_provider_id": "default_chat",
+  "active_video_provider_id": "default_video",
+  "gemini_api_key": "<SUXI_KEY_HERE>",
+  "gemini_api_url": "https://new.suxi.ai",
+  "gemini_model": "gemini-3.1-flash-image-preview",
+  "chat_api_key": "<CHAT_KEY_HERE>",
+  "chat_api_url": "http://127.0.0.1:8045",
+  "chat_model": "gemini-3-flash",
+  "video_api_key": "<VIDEO_KEY_HERE>",
+  "video_api_url": "https://allapi.store/v1",
+  "video_model": "sora-2-all",
+  "proxy_url": "socks5://127.0.0.1:10808",
+  "output_dir": "",
+  "machine_id": "<pc1-or-pc2>",
+  "peer_machines": [
+    { "machine_id": "pc2", "base_url": "http://192.168.110.120:5001" }
+  ],
+  "history_store_path": "outputs/generation_history.jsonl",
+  "history_store_max_mb": 50,
+  "history_recorder_enabled": true
+}
