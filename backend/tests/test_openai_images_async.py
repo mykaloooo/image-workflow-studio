@@ -34,7 +34,7 @@ def make_async_generator(tmp_path, **kwargs):
         api_key="sk-test",
         api_url="https://subimg.jmlt.asia",
         output_dir=str(tmp_path),
-        model="gpt-image-2",
+        model=kwargs.get("model", "gpt-image-2"),
         provider_protocol="openai_images_async",
         provider_channel=kwargs.get("provider_channel", "main"),
         poll_interval_ms=kwargs.get("poll_interval_ms", 500),
@@ -107,6 +107,38 @@ def test_async_text_generation_polls_and_downloads_once(monkeypatch, tmp_path):
     assert post_calls[0]["json"]["provider"] == "main"
     assert post_calls[0]["json"]["response_format"] == "url"
     assert get_calls[0]["url"] == "https://subimg.jmlt.asia/api/openai/tasks/task-1"
+
+
+def test_async_text_generation_passes_transparent_png_for_gpt_image_15(monkeypatch, tmp_path):
+    gen = make_async_generator(tmp_path, model="gpt-image-1.5")
+    patch_recovery(monkeypatch)
+    post_calls = []
+    b64_png = base64.b64encode(PNG_1X1).decode("ascii")
+
+    def fake_post(url, json=None, **kwargs):
+        post_calls.append({"url": url, "json": json, "kwargs": kwargs})
+        return FakeResponse(200, {"data": [{"b64_json": b64_png}]})
+
+    monkeypatch.setattr(requests, "post", fake_post)
+    monkeypatch.setattr(
+        gen,
+        "_save_and_process_image",
+        lambda data, target_size=None: {"filename": "out.png", "filepath": str(tmp_path / "out.png"), "url": "/api/images/out.png"},
+    )
+
+    result = gen.generate(
+        "cat",
+        aspect_ratio="1:1",
+        resolution="1K",
+        reference_images=[],
+        count=1,
+        background="transparent",
+        output_format="png",
+    )
+
+    assert result["success"] is True
+    assert post_calls[0]["json"]["background"] == "transparent"
+    assert post_calls[0]["json"]["output_format"] == "png"
 
 
 def test_async_failed_task_does_not_resubmit(monkeypatch, tmp_path):
@@ -185,3 +217,122 @@ def test_async_edit_uses_multipart_and_accepts_b64_result(monkeypatch, tmp_path)
     assert post_calls[0]["data"]["provider"] == "main"
     assert post_calls[0]["data"]["response_format"] == "b64_json"
     assert len(post_calls[0]["files"]) == 1
+
+
+def test_async_edit_passes_transparent_png_for_gpt_image_15(monkeypatch, tmp_path):
+    gen = make_async_generator(tmp_path, model="gpt-image-1.5", response_format="b64_json")
+    patch_recovery(monkeypatch)
+    post_calls = []
+    b64_png = base64.b64encode(PNG_1X1).decode("ascii")
+    ref_image = "data:image/png;base64," + b64_png
+
+    def fake_post(url, data=None, files=None, **kwargs):
+        post_calls.append({"url": url, "data": data, "files": files, "kwargs": kwargs})
+        return FakeResponse(200, {"data": [{"b64_json": b64_png}]})
+
+    monkeypatch.setattr(requests, "post", fake_post)
+    monkeypatch.setattr(
+        gen,
+        "_save_and_process_image",
+        lambda data, target_size=None: {"filename": "edit.png", "filepath": str(tmp_path / "edit.png"), "url": "/api/images/edit.png"},
+    )
+
+    result = gen.generate(
+        "edit it",
+        aspect_ratio="1:1",
+        resolution="1K",
+        reference_images=[ref_image],
+        count=1,
+        background="transparent",
+        output_format="png",
+    )
+
+    assert result["success"] is True
+    assert post_calls[0]["data"]["background"] == "transparent"
+    assert post_calls[0]["data"]["output_format"] == "png"
+    assert len(post_calls[0]["files"]) == 1
+
+
+def test_async_edit_retries_standard_path_on_405_with_transparent_png(monkeypatch, tmp_path):
+    gen = make_async_generator(tmp_path, model="gpt-image-1.5", response_format="b64_json")
+    patch_recovery(monkeypatch)
+    post_calls = []
+    b64_png = base64.b64encode(PNG_1X1).decode("ascii")
+    ref_image = "data:image/png;base64," + b64_png
+
+    def fake_post(url, data=None, files=None, **kwargs):
+        post_calls.append({"url": url, "data": data, "files": files, "kwargs": kwargs})
+        if url.endswith("/api/openai/v1/images/edits"):
+            return FakeResponse(405, {"error": "method not allowed"})
+        return FakeResponse(200, {"data": [{"b64_json": b64_png}]})
+
+    monkeypatch.setattr(requests, "post", fake_post)
+    monkeypatch.setattr(
+        gen,
+        "_save_and_process_image",
+        lambda data, target_size=None: {"filename": "edit.png", "filepath": str(tmp_path / "edit.png"), "url": "/api/images/edit.png"},
+    )
+
+    result = gen.generate(
+        "extract the lamp, transparent background",
+        aspect_ratio="1:1",
+        resolution="2K",
+        reference_images=[ref_image],
+        count=1,
+        background="transparent",
+        output_format="png",
+    )
+
+    assert result["success"] is True
+    assert [call["url"] for call in post_calls] == [
+        "https://subimg.jmlt.asia/api/openai/v1/images/edits",
+        "https://subimg.jmlt.asia/v1/images/edits",
+    ]
+    assert post_calls[1]["data"]["provider"] == "main"
+    assert post_calls[1]["data"]["size"] == "1024x1024"
+    assert post_calls[1]["data"]["background"] == "transparent"
+    assert post_calls[1]["data"]["output_format"] == "png"
+    assert len(post_calls[1]["files"]) == 1
+
+
+def test_async_edit_retries_channel_on_no_compatible_accounts(monkeypatch, tmp_path):
+    gen = make_async_generator(tmp_path, model="gpt-image-1.5", response_format="b64_json")
+    patch_recovery(monkeypatch)
+    post_calls = []
+    b64_png = base64.b64encode(PNG_1X1).decode("ascii")
+    ref_image = "data:image/png;base64," + b64_png
+
+    def fake_post(url, data=None, files=None, **kwargs):
+        post_calls.append({"url": url, "data": dict(data or {}), "files": files, "kwargs": kwargs})
+        if url.endswith("/api/openai/v1/images/edits"):
+            return FakeResponse(405, {"error": "method not allowed"})
+        if data.get("provider") == "main":
+            return FakeResponse(503, {"error": {"message": "No available compatible accounts", "type": "api_error"}})
+        return FakeResponse(200, {"data": [{"b64_json": b64_png}]})
+
+    monkeypatch.setattr(requests, "post", fake_post)
+    monkeypatch.setattr(
+        gen,
+        "_save_and_process_image",
+        lambda data, target_size=None: {"filename": "edit.png", "filepath": str(tmp_path / "edit.png"), "url": "/api/images/edit.png"},
+    )
+
+    result = gen.generate(
+        "extract the lamp, transparent background",
+        aspect_ratio="1:1",
+        resolution="1024x1024",
+        reference_images=[ref_image],
+        count=1,
+        background="transparent",
+        output_format="png",
+    )
+
+    assert result["success"] is True
+    assert [call["url"] for call in post_calls] == [
+        "https://subimg.jmlt.asia/api/openai/v1/images/edits",
+        "https://subimg.jmlt.asia/v1/images/edits",
+        "https://subimg.jmlt.asia/v1/images/edits",
+    ]
+    assert [call["data"]["provider"] for call in post_calls] == ["main", "main", "backup"]
+    assert post_calls[2]["data"]["background"] == "transparent"
+    assert post_calls[2]["data"]["output_format"] == "png"

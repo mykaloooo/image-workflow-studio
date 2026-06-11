@@ -1100,6 +1100,43 @@ class ImageGenerator:
         self.input_fidelity = ""
         self.response_format = "url"
 
+    @staticmethod
+    def _normalize_model_name(model_name):
+        return str(model_name or "").strip().lower()
+
+    @classmethod
+    def _is_openai_images_model_name(cls, model_name):
+        normalized = cls._normalize_model_name(model_name)
+        return bool(normalized) and (
+            normalized.startswith("gpt-image")
+            or normalized.startswith("dall-e")
+            or normalized.startswith("codex-image")
+            or normalized.startswith("codex-gpt-image")
+        )
+
+    @classmethod
+    def _is_chat_image_model_name(cls, model_name):
+        normalized = cls._normalize_model_name(model_name)
+        return bool(normalized) and not cls._is_openai_images_model_name(normalized) and (
+            normalized.startswith("gpt-5")
+            or normalized.startswith("gpt-4o")
+            or normalized.startswith("gpt-4.1")
+        )
+
+    def _resolve_image_route(self, api_key, api_url, model_name):
+        if not api_key:
+            return ""
+        normalized_url = str(api_url or "")
+        if self._is_openai_images_model_name(model_name):
+            return "openai_images_async" if self.provider_protocol == "openai_images_async" else "openai_images"
+        if self._is_chat_image_model_name(model_name):
+            return "chat_image"
+        if not normalized_url or "googleapis.com" in normalized_url:
+            return "google_native"
+        if "127.0.0.1" in normalized_url or "localhost" in normalized_url or ":8045" in normalized_url:
+            return "local_proxy"
+        return "gemini_native_http"
+
     def initialize(
         self,
         api_key,
@@ -1174,8 +1211,11 @@ class ImageGenerator:
                 or normalized_model.startswith("gpt-4o")
                 or normalized_model.startswith("gpt-4.1")
             )
+            image_route = self._resolve_image_route(api_key, api_url, self.model)
+            if image_route:
+                print(f"[Image Route] model={self.model} protocol={self.provider_protocol or '-'} route={image_route}")
 
-            if api_key and is_openai_images and self.provider_protocol == "openai_images_async":
+            if image_route == "openai_images_async":
                 print(f"初始化图片引擎: Async OpenAI Images API 模式 (模型: {self.model}, API: {api_url})...")
                 self.use_openai_images_async = True
                 self.use_openai_images = False
@@ -1186,7 +1226,7 @@ class ImageGenerator:
                 os.environ.pop("HTTP_PROXY", None)
                 os.environ.pop("HTTPS_PROXY", None)
 
-            elif api_key and is_openai_images:
+            elif image_route == "openai_images":
                 # OpenAI Images API 模式 (gpt-image-2, dall-e-3 等)
                 print(f"初始化图片引擎: OpenAI Images API 模式 (模型: {self.model})...")
                 self.use_openai_images = True
@@ -1200,7 +1240,7 @@ class ImageGenerator:
                     os.environ.pop("HTTP_PROXY", None)
                     os.environ.pop("HTTPS_PROXY", None)
 
-            elif api_key and is_official:
+            elif image_route == "google_native":
                 # Google 原生模式 (官方)
                 print("初始化图片引擎: Google 原生模式 (官方)...")
                 self.use_openai = False
@@ -1224,7 +1264,7 @@ class ImageGenerator:
                 else:
                     self.client = genai.Client(api_key=api_key)
 
-            elif api_key and is_local_proxy:
+            elif image_route == "local_proxy":
                 # 本地代理模式 (保留 Antigravity hack)
                 print(f"初始化图片引擎: 本地代理模式 (API: {api_url})...")
                 self.use_openai = True
@@ -1232,7 +1272,7 @@ class ImageGenerator:
                 self.api_key = api_key
                 self.api_url = api_url
 
-            elif api_key and is_chat_image:
+            elif image_route == "chat_image":
                 # Chat-based 图像生成模式（gpt-5.4-mini / gpt-4o 等多模态模型）
                 # 通过 /v1/chat/completions 端点，解析 message.images[].image_url.url 拿 base64
                 print(f"初始化图片引擎: Chat-based 图像生成模式 (模型: {self.model}, API: {api_url})...")
@@ -1244,7 +1284,7 @@ class ImageGenerator:
                 os.environ.pop("HTTP_PROXY", None)
                 os.environ.pop("HTTPS_PROXY", None)
 
-            elif api_key:
+            elif image_route == "gemini_native_http":
                 # 第三方通用网关 (SuXi, oreapi, 等)，使用 Bearer 鉴权和原生 JSON
                 print(f"初始化图片引擎: 第三方通用网关模式 (API: {api_url})...")
                 self.use_gemini_native_http = True
@@ -1680,20 +1720,22 @@ class ImageGenerator:
         count=1,
         size=None,
         quality=None,
+        background=None,
+        output_format=None,
         task_meta=None,
     ):
         """生成图片"""
         try:
             if self.use_openai_images_async:
-                print(f"[Async OpenAI Images] 模型: {self.model}, 比例: {aspect_ratio}, 分辨率: {resolution}, size: {size}, quality: {quality}")
+                print(f"[Async OpenAI Images] 模型: {self.model}, 比例: {aspect_ratio}, 分辨率: {resolution}, size: {size}, quality: {quality}, background: {background}, output_format: {output_format}")
                 return self._generate_openai_images_async(
-                    prompt, aspect_ratio, resolution, reference_images, count, size=size, quality=quality, task_meta=task_meta
+                    prompt, aspect_ratio, resolution, reference_images, count, size=size, quality=quality, background=background, output_format=output_format, task_meta=task_meta
                 )
             elif self.use_openai_images:
                 # OpenAI Images API (gpt-image-2, dall-e-3 等)
-                print(f"[OpenAI Images] 模型: {self.model}, 比例: {aspect_ratio}, 分辨率: {resolution}, size: {size}, quality: {quality}")
+                print(f"[OpenAI Images] 模型: {self.model}, 比例: {aspect_ratio}, 分辨率: {resolution}, size: {size}, quality: {quality}, background: {background}, output_format: {output_format}")
                 return self._generate_openai_images(
-                    prompt, aspect_ratio, resolution, reference_images, count, size=size, quality=quality, task_meta=task_meta
+                    prompt, aspect_ratio, resolution, reference_images, count, size=size, quality=quality, background=background, output_format=output_format, task_meta=task_meta
                 )
             elif self.use_gemini_native_http:
                 # 第三方 Gemini 原生协议 (SuXi.ai 等)
@@ -1746,6 +1788,15 @@ class ImageGenerator:
         "1k": {"1:1": "1024x1024", "3:2": "1536x1024", "2:3": "1024x1536", "16:9": "1536x864", "9:16": "864x1536", "4:3": "1536x1152", "3:4": "1152x1536"},
         "2k": {"1:1": "2048x2048", "3:2": "2048x1360", "2:3": "1360x2048", "16:9": "2048x1152", "9:16": "1152x2048", "4:3": "2048x1536", "3:4": "1536x2048"},
         "4k": {"1:1": "2880x2880", "3:2": "3520x2336", "2:3": "2336x3520", "16:9": "3840x2160", "9:16": "2160x3840", "4:3": "3328x2480", "3:4": "2480x3328"},
+    }
+    _GPT_IMAGE_15_SIZE_MAP = {
+        "1:1": "1024x1024",
+        "3:2": "1536x1024",
+        "2:3": "1024x1536",
+        "16:9": "1536x1024",
+        "9:16": "1024x1536",
+        "4:3": "1536x1024",
+        "3:4": "1024x1536",
     }
     # 分辨率 → quality 映射
     _OPENAI_QUALITY_MAP = {
@@ -1819,6 +1870,41 @@ class ImageGenerator:
             raw_bytes = base64.b64decode(image_data)
         return raw_bytes
 
+    def _is_gpt_image_15_model(self):
+        return str(self.model or "").strip().lower() == "gpt-image-1.5"
+
+    def _supports_transparent_background(self):
+        return self._is_gpt_image_15_model()
+
+    def _resolve_gpt_image_15_size(self, size_value=None, aspect_ratio=None):
+        ratio_key = str(aspect_ratio or "").strip()
+        if ratio_key in self._GPT_IMAGE_15_SIZE_MAP:
+            return self._GPT_IMAGE_15_SIZE_MAP[ratio_key]
+
+        match = re.match(r"^(\d{2,5})x(\d{2,5})$", str(size_value or "").strip().lower())
+        if match:
+            width = int(match.group(1))
+            height = int(match.group(2))
+            if width > height:
+                return "1536x1024"
+            if height > width:
+                return "1024x1536"
+        return "1024x1024"
+
+    def _resolve_openai_output_options(self, background=None, output_format=None):
+        bg = str(background or "").strip().lower()
+        fmt = str(output_format or "").strip().lower()
+        if bg not in {"transparent", "opaque", "auto"}:
+            bg = ""
+        if fmt not in {"png", "webp", "jpeg"}:
+            fmt = ""
+        if bg == "transparent" and not self._supports_transparent_background():
+            print(f"[OpenAI Images] ignore transparent background for unsupported model={self.model}")
+            bg = ""
+        if bg == "transparent" and fmt not in {"png", "webp"}:
+            fmt = "png"
+        return bg, fmt
+
     def _prepare_openai_async_image_file(self, image_data, index=0, task_meta=None, reference_count=1):
         raw_bytes = self._load_reference_image_bytes(image_data)
         if not raw_bytes:
@@ -1844,6 +1930,21 @@ class ImageGenerator:
     def _openai_async_task_url(self, base_url, task_id):
         encoded_task_id = str(task_id or "").strip()
         return f"{base_url}/api/openai/tasks/{encoded_task_id}"
+
+    def _openai_async_channel_candidates(self):
+        primary = str(self.provider_channel or "main").strip() or "main"
+        candidates = []
+        for channel in [primary, "main", "backup", "fast"]:
+            if channel and channel not in candidates:
+                candidates.append(channel)
+        return candidates
+
+    def _is_no_compatible_accounts_response(self, resp):
+        try:
+            text = str(getattr(resp, "text", "") or "").lower()
+        except Exception:
+            text = ""
+        return getattr(resp, "status_code", None) == 503 and "no available compatible accounts" in text
 
     def _poll_openai_async_task(self, task_id, base_url, headers, initial_task=None, recovery_id=None):
         import requests as req_lib
@@ -2206,7 +2307,7 @@ class ImageGenerator:
                     return preferred
         return candidates[0]
 
-    def _generate_openai_images_async(self, prompt, aspect_ratio, resolution, reference_images, count=1, size=None, quality=None, task_meta=None):
+    def _generate_openai_images_async(self, prompt, aspect_ratio, resolution, reference_images, count=1, size=None, quality=None, background=None, output_format=None, task_meta=None):
         """Async OpenAI Images wrapper used by JMLT/SubImg style providers."""
         import requests as req_lib
         import time as _time
@@ -2218,16 +2319,25 @@ class ImageGenerator:
             or self._normalize_openai_size(resolution, reference_images, aspect_ratio)
             or self._OPENAI_SIZE_MAP.get(aspect_ratio, "1024x1024")
         )
+        if self._is_gpt_image_15_model():
+            legacy_size = self._resolve_gpt_image_15_size(resolved_size, aspect_ratio)
+            if legacy_size != resolved_size:
+                print(f"[Async OpenAI Images] gpt-image-1.5 size {resolved_size} -> {legacy_size}")
+            resolved_size = legacy_size
         resolved_quality = self._resolve_openai_quality(resolution, quality, size=size)
         image_count = max(1, min(int(count or 1), 10))
         channel = self.provider_channel or "main"
         response_format = self.response_format if self.response_format in {"url", "b64_json"} else "url"
+        resolved_background, resolved_output_format = self._resolve_openai_output_options(background, output_format)
         auth_headers = {"Authorization": f"Bearer {self.api_key}"}
         json_headers = {**auth_headers, "Content-Type": "application/json"}
 
         try:
             if reference_images:
-                endpoint = f"{base_url}/api/openai/v1/images/edits"
+                endpoints = [
+                    f"{base_url}/api/openai/v1/images/edits",
+                    f"{base_url}/v1/images/edits",
+                ]
                 files = []
                 reference_count = len(reference_images or [])
                 for index, image_data in enumerate(reference_images):
@@ -2251,16 +2361,39 @@ class ImageGenerator:
                 }
                 if resolved_quality:
                     form_data["quality"] = resolved_quality
+                if resolved_background:
+                    form_data["background"] = resolved_background
+                if resolved_output_format:
+                    form_data["output_format"] = resolved_output_format
                 if self.input_fidelity:
                     form_data["input_fidelity"] = self.input_fidelity
-                print(f"[Async OpenAI Images] submit edits endpoint={endpoint} provider={channel} size={resolved_size} quality={resolved_quality or 'default'} n={image_count}")
-                resp = req_lib.post(
-                    endpoint,
-                    data=form_data,
-                    files=files,
-                    headers=auth_headers,
-                    timeout=120,
-                )
+                resp = None
+                endpoint = endpoints[0]
+                channel_candidates = self._openai_async_channel_candidates()
+                for attempt_endpoint in endpoints:
+                    endpoint = attempt_endpoint
+                    skip_endpoint = False
+                    for attempt_channel in channel_candidates:
+                        form_data["provider"] = attempt_channel
+                        print(f"[Async OpenAI Images] submit edits endpoint={endpoint} provider={attempt_channel} size={resolved_size} quality={resolved_quality or 'default'} n={image_count}")
+                        resp = req_lib.post(
+                            endpoint,
+                            data=form_data,
+                            files=files,
+                            headers=auth_headers,
+                            timeout=120,
+                        )
+                        if resp.status_code == 405 and attempt_endpoint != endpoints[-1]:
+                            print(f"[Async OpenAI Images] edits endpoint HTTP 405, retry standard path: {endpoints[-1]}")
+                            skip_endpoint = True
+                            break
+                        if self._is_no_compatible_accounts_response(resp) and attempt_channel != channel_candidates[-1]:
+                            print(f"[Async OpenAI Images] provider={attempt_channel} has no compatible accounts, retry next channel")
+                            continue
+                        break
+                    if skip_endpoint:
+                        continue
+                    break
             else:
                 endpoint = f"{base_url}/api/openai/v1/images/generations"
                 payload = {
@@ -2273,6 +2406,10 @@ class ImageGenerator:
                 }
                 if resolved_quality:
                     payload["quality"] = resolved_quality
+                if resolved_background:
+                    payload["background"] = resolved_background
+                if resolved_output_format:
+                    payload["output_format"] = resolved_output_format
                 print(f"[Async OpenAI Images] submit generations endpoint={endpoint} provider={channel} size={resolved_size} quality={resolved_quality or 'default'} n={image_count}")
                 resp = req_lib.post(
                     endpoint,
@@ -2367,7 +2504,7 @@ class ImageGenerator:
             print(f"[Async OpenAI Images] failed ({elapsed}s): {error_detail}")
             raise e
 
-    def _generate_openai_images(self, prompt, aspect_ratio, resolution, reference_images, count=1, size=None, quality=None, task_meta=None):
+    def _generate_openai_images(self, prompt, aspect_ratio, resolution, reference_images, count=1, size=None, quality=None, background=None, output_format=None, task_meta=None):
         """OpenAI Images API (gpt-image-2, dall-e-3 等)"""
         import requests as req_lib
         import time as _time
@@ -2378,10 +2515,16 @@ class ImageGenerator:
             or self._normalize_openai_size(resolution, reference_images, aspect_ratio)
             or self._OPENAI_SIZE_MAP.get(aspect_ratio, "1024x1024")
         )
+        if self._is_gpt_image_15_model():
+            legacy_size = self._resolve_gpt_image_15_size(resolved_size, aspect_ratio)
+            if legacy_size != resolved_size:
+                print(f"[OpenAI Images] gpt-image-1.5 size {resolved_size} -> {legacy_size}")
+            resolved_size = legacy_size
         resolved_quality = self._resolve_openai_quality(resolution, quality, size=size)
+        resolved_background, resolved_output_format = self._resolve_openai_output_options(background, output_format)
 
         print(f"[OpenAI Images] URL: {base_url}/v1/images/generations")
-        print(f"[OpenAI Images] size={resolved_size}, quality={resolved_quality or 'default'} (from size={size}, resolution={resolution}, quality={quality}), n={count}")
+        print(f"[OpenAI Images] size={resolved_size}, quality={resolved_quality or 'default'}, background={resolved_background or 'default'}, output_format={resolved_output_format or 'default'} (from size={size}, resolution={resolution}, quality={quality}), n={count}")
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -2391,7 +2534,7 @@ class ImageGenerator:
         # 如果有参考图，尝试用 /v1/images/edits（图生图）
         if reference_images:
             return self._generate_openai_images_edit(
-                prompt, reference_images, resolved_size, resolved_quality, headers, base_url, task_meta=task_meta
+                prompt, reference_images, resolved_size, resolved_quality, headers, base_url, background=resolved_background, output_format=resolved_output_format, task_meta=task_meta
             )
 
         # 文生图：/v1/images/generations
@@ -2404,6 +2547,10 @@ class ImageGenerator:
         }
         if resolved_quality:
             payload["quality"] = resolved_quality
+        if resolved_background:
+            payload["background"] = resolved_background
+        if resolved_output_format:
+            payload["output_format"] = resolved_output_format
         # 非官方 OpenAI 网关（chat2api Plus / cpa_japan / codex.kakahome.top 等）全部走 URL 返回模式，
         # 避免大图 b64 响应体超时；api.openai.com 官方 API 对未知参数严格会 400，跳过。
         if "api.openai.com" not in base_url:
@@ -2621,7 +2768,7 @@ class ImageGenerator:
             print(f"[OpenAI Images] 生成失败 ({elapsed}s): {error_detail}")
             raise e
 
-    def _generate_openai_images_edit(self, prompt, reference_images, size, quality, headers, base_url, task_meta=None):
+    def _generate_openai_images_edit(self, prompt, reference_images, size, quality, headers, base_url, background=None, output_format=None, task_meta=None):
         """OpenAI 图生图 (gpt-image-2 /v1/images/edits)"""
         import requests as req_lib
         import time as _time
@@ -2669,6 +2816,10 @@ class ImageGenerator:
             }
             if quality:
                 form_data["quality"] = quality
+            if background:
+                form_data["background"] = background
+            if output_format:
+                form_data["output_format"] = output_format
             # 同文生图：非官方 OpenAI 网关全走 URL 返回模式。
             if "api.openai.com" not in base_url:
                 form_data["response_format"] = "url"
@@ -3563,6 +3714,13 @@ def generate_image():
         reference_fidelity = str(data.get("reference_fidelity") or task_meta.get("reference_fidelity") or "").strip().lower()
         if reference_fidelity:
             task_meta["reference_fidelity"] = reference_fidelity
+        background = str(data.get("background") or task_meta.get("background") or "").strip().lower()
+        output_format = str(
+            data.get("output_format")
+            or data.get("outputFormat")
+            or task_meta.get("output_format")
+            or ""
+        ).strip().lower()
         # mode：image=图生图（默认）/ text=文生图 / multi=多参考图。前端不传时按 reference_images 是否为空推断，
         # 保持对老前端的兼容；新前端会显式传 mode，让我们在这里做防御性校验。
         mode = str(data.get("mode") or "").strip().lower()
@@ -3596,9 +3754,24 @@ def generate_image():
         target_model = str(model or provider.get("model") or config.get("gemini_model") or "").strip()
         if not target_model:
             return jsonify({"success": False, "error": "当前图片供应商未配置模型"}), 400
+        if background and background not in {"transparent", "opaque", "auto"}:
+            return jsonify({"success": False, "error": "background 只支持 transparent / opaque / auto"}), 400
+        if output_format and output_format not in {"png", "webp", "jpeg"}:
+            return jsonify({"success": False, "error": "output_format 只支持 png / webp / jpeg"}), 400
+        if background == "transparent":
+            if target_model.lower() != "gpt-image-1.5":
+                return jsonify({"success": False, "error": "透明背景只对 gpt-image-1.5 生效，请切换模型或取消透明 PNG"}), 400
+            if output_format and output_format not in {"png", "webp"}:
+                return jsonify({"success": False, "error": "透明背景需要 output_format=png 或 webp"}), 400
+            output_format = output_format or "png"
+            task_meta["transparent_background"] = True
+        if background:
+            task_meta["background"] = background
+        if output_format:
+            task_meta["output_format"] = output_format
 
         push_runtime_log(
-            f"[生成请求] provider={provider.get('name') or provider.get('id')} model={target_model} aspect={aspect_ratio} resolution={resolution} size={size} quality={quality} count={count}",
+            f"[生成请求] provider={provider.get('name') or provider.get('id')} model={target_model} aspect={aspect_ratio} resolution={resolution} size={size} quality={quality} background={background or '-'} output_format={output_format or '-'} count={count}",
             level="info",
         )
 
@@ -3632,6 +3805,8 @@ def generate_image():
             count=count,
             size=size,
             quality=quality,
+            background=background,
+            output_format=output_format,
             task_meta=task_meta,
         )
 
