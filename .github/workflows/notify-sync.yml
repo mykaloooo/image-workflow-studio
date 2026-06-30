@@ -11,6 +11,8 @@ permissions:
 jobs:
   dispatch:
     runs-on: ubuntu-latest
+    # 这个文件会被同步镜像到下游账号；只在上游 mykaloooo 真正执行，下游副本直接跳过
+    if: ${{ github.repository_owner == 'mykaloooo' }}
     steps:
       - name: 通知 devin-config 跑同步
         run: |
