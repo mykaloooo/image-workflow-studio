@@ -1,5 +1,5 @@
 maintenance: |
-  pip install Flask==3.0.0 Flask-CORS==4.0.0 Pillow==10.1.0 'google-genai>=1.60.0'
+  pip install -r backend/requirements.txt
   (cd frontend && npm install)
 knowledge:
   - name: run
@@ -13,4 +13,4 @@ knowledge:
       (cd frontend && npm run build)
   - name: note
     contents: |
-      backend/requirements.txt 里的 portfinder pin 无法解析，电子端 electron 目录按重依赖原则未安装。
+      electron 目录依赖较重，本蓝图未安装，需要时本机另装。
